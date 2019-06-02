@@ -9,6 +9,10 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
+// **** Importación de librerías específicas para este proyecto
+
+import { GoogleMaps } from '@ionic-native/google-maps';
+
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
@@ -16,6 +20,7 @@ import { AppComponent } from './app.component';
   providers: [
     StatusBar,
     SplashScreen,
+    GoogleMaps,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]
