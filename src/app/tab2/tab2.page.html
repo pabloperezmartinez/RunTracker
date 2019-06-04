@@ -10,4 +10,12 @@
   <div id="map_canvas" style="height:70%;">
 	   <div #map id="map" style="height:100%;"></div>
   </div>
+  <ion-button (click)="startTracking()">
+    <ion-icon slot="start" name="star"></ion-icon>
+    Iniciar Carrera
+  </ion-button>
+  <ion-button (click)="stopTracking()">
+    <ion-icon slot="start" name="star"></ion-icon>
+    Detener Carrera
+  </ion-button>
 </ion-content>
