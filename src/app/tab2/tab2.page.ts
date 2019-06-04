@@ -13,7 +13,24 @@ export class Tab2Page {
   public element: HTMLElement;
   private longitude = 0;
   private latitude = 0;
+
+  // opcionces de tracking de posición
   private posOptions = {timeout: 10000, enableHighAccuracy: false};
+  private options = {frequency: 3000, enableHighAccuracy: true, maximumAge: 0};
+  private watch : any;
+  private marker : Marker;
+  private subs : any;
+
+  //inicialización de objeto JSON donde se almacenarán las coordenadas durante el tracking
+  private geojson = {
+    type: 'feature',
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: []
+    }
+  };
+  private positions = [];
 
   constructor(public googleMaps: GoogleMaps, private geolocation: Geolocation) {}
 
@@ -83,7 +100,49 @@ export class Tab2Page {
        }
     };
     this.map.addMarker(markerOptions).then((marker: Marker) => {
+      this.marker = marker;
       console.log("ok");
     });
+  }
+
+  /**
+   * Inicia trackeo de geolocalización, dibuja polyline, y mueve las cámaras y
+   * marker de Google maps de acuerdo a dicha geolocalización.
+   * @return
+   */
+  startTracking() {
+    this.watch = this.geolocation.watchPosition();
+
+    this.subs = this.watch.subscribe((data) => {
+      this.geojson.geometry.coordinates.push([data.coords.latitude, data.coords.longitude]);
+
+      let cameraPosition: CameraPosition<any> = {
+        target: {
+          lat: data.coords.latitude,
+          lng: data.coords.longitude
+        },
+        zoom: 18,
+        tilt: 20
+      };
+      this.map.moveCamera(cameraPosition);
+
+      this.positions.push({lat: data.coords.latitude, lng: data.coords.longitude});
+      this.map.addPolyline({
+        points: this.positions,
+        'color' : '#488aff',
+        'width': 8,
+        'geodesic': true
+      });
+
+      this.marker.setPosition({lat: data.coords.latitude, lng: data.coords.longitude});
+    });
+  }
+
+  /**
+   * Detiene todas las actividades de geolocalización y guarda datos trackeados
+   * @return
+   */
+  stopTracking() {
+    this.subs.unsubscribe();
   }
 }
