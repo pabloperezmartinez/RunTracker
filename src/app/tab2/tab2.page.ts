@@ -1,6 +1,7 @@
-import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, MarkerOptions, Marker, CameraPosition, Environment } from '@ionic-native/google-maps';
+import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, MarkerOptions, Marker, CameraPosition, Environment, Spherical } from '@ionic-native/google-maps';
 import { Geolocation, Geoposition } from '@ionic-native/geolocation/ngx';
 import { Component } from '@angular/core';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-tab2',
@@ -13,6 +14,7 @@ export class Tab2Page {
   public element: HTMLElement;
   private longitude = 0;
   private latitude = 0;
+  private distance = 0;
 
   // opcionces de tracking de posición
   private posOptions = {timeout: 10000, enableHighAccuracy: false};
@@ -20,6 +22,9 @@ export class Tab2Page {
   private watch : any;
   private marker : Marker;
   private subs : any;
+  private seconds = 0;
+  private runClock : any;
+  public elapsedTime = '00 : 00 : 00';
 
   //inicialización de objeto JSON donde se almacenarán las coordenadas durante el tracking
   private geojson = {
@@ -32,11 +37,19 @@ export class Tab2Page {
   };
   private positions = [];
 
-  constructor(public googleMaps: GoogleMaps, private geolocation: Geolocation) {}
+  constructor(private geolocation: Geolocation) {}
 
   ionViewDidEnter() {
     this.loadMap();
     this.getStartLocation();
+  }
+
+  ionViewDidLeave() {
+    this.map.clear();
+    this.getStartLocation();
+    this.distance = 0;
+    this.seconds = 0;
+    this.elapsedTime = '00 : 00 : 00';
   }
 
   /**
@@ -45,7 +58,7 @@ export class Tab2Page {
    */
   loadMap() {
     this.element = document.getElementById('map');
-    this.map = this.googleMaps.create(this.element, {});
+    this.map = GoogleMaps.create(this.element, {});
     this.map.one(GoogleMapsEvent.MAP_READY).then(
 	     () => {
 	       console.log('Map is ready!');
@@ -112,7 +125,7 @@ export class Tab2Page {
    */
   startTracking() {
     this.watch = this.geolocation.watchPosition();
-
+    this.startTimer();
     this.subs = this.watch.subscribe((data) => {
       this.geojson.geometry.coordinates.push([data.coords.latitude, data.coords.longitude]);
 
@@ -127,13 +140,19 @@ export class Tab2Page {
       this.map.moveCamera(cameraPosition);
 
       this.positions.push({lat: data.coords.latitude, lng: data.coords.longitude});
+      console.log(data.coords.latitude+ "," + data.coords.longitude)
+
+      if (this.positions.length > 1){
+			     this.distance += Spherical.computeDistanceBetween(this.positions[this.positions.length-1], this.positions[this.positions.length-2]);
+           console.log(this.distance);
+		  };
+
       this.map.addPolyline({
         points: this.positions,
         'color' : '#488aff',
         'width': 8,
         'geodesic': true
       });
-
       this.marker.setPosition({lat: data.coords.latitude, lng: data.coords.longitude});
     });
   }
@@ -144,5 +163,32 @@ export class Tab2Page {
    */
   stopTracking() {
     this.subs.unsubscribe();
+    this.stopTimer();
+  }
+
+  /**
+   * Inicializa cronómetro de carrera
+   * @return
+   */
+  startTimer () {
+    this.runClock = setInterval(() => {
+	    this.elapsedTime = moment().hour(0).minute(0).second(this.seconds++).format('HH : mm : ss');
+	  }, 1000)
+  }
+
+  /**
+   * Detiene cronómetro
+   * @return
+   */
+  stopTimer () {
+	        clearInterval(this.runClock);
+	 }
+
+  /**
+   * Procesa los datos obtenidos durante la carrera
+   * @return
+   */
+  processData() {
+
   }
 }

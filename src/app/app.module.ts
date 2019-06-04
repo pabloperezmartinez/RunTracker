@@ -11,7 +11,7 @@ import { AppComponent } from './app.component';
 
 // **** Importación de librerías específicas para este proyecto
 
-import { GoogleMaps } from '@ionic-native/google-maps';
+import { GoogleMaps, Spherical } from '@ionic-native/google-maps';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 
 @NgModule({
@@ -23,6 +23,7 @@ import { Geolocation } from '@ionic-native/geolocation/ngx';
     SplashScreen,
     GoogleMaps,
     Geolocation,
+    Spherical,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]
