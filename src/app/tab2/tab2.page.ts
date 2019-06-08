@@ -1,6 +1,10 @@
-import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, MarkerOptions, Marker, CameraPosition, Environment } from '@ionic-native/google-maps';
+import { GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions, MarkerOptions, Marker, CameraPosition, Environment, Spherical, Polyline } from '@ionic-native/google-maps';
 import { Geolocation, Geoposition } from '@ionic-native/geolocation/ngx';
 import { Component } from '@angular/core';
+import { AlertController } from '@ionic/angular';
+import { Router } from '@angular/router';
+import { Storage } from '@ionic/storage';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-tab2',
@@ -13,13 +17,24 @@ export class Tab2Page {
   public element: HTMLElement;
   private longitude = 0;
   private latitude = 0;
+  private distance = 0;
+  private trackings = [];
+  private staticMaps = [];
+  private tmpPostions = [];
+  private stacicMapsKey = "AIzaSyAJSv8BbBoofXTmF02eCikIt16O2Gp2-Qo";
+  private staticMapsUrl = 'https://maps.googleapis.com/maps/api/staticmap?size=600x200&path=color:0x0000cc|weight:3|';
+
 
   // opcionces de tracking de posición
-  private posOptions = {timeout: 10000, enableHighAccuracy: false};
+  private posOptions = {timeout: 3000, enableHighAccuracy: false};
   private options = {frequency: 3000, enableHighAccuracy: true, maximumAge: 0};
   private watch : any;
   private marker : Marker;
   private subs : any;
+  private seconds = 0;
+  private runClock : any;
+  public elapsedTime = '00 : 00 : 00';
+  private trackingIsStarted = false;
 
   //inicialización de objeto JSON donde se almacenarán las coordenadas durante el tracking
   private geojson = {
@@ -31,12 +46,24 @@ export class Tab2Page {
     }
   };
   private positions = [];
+  private polyLine : any;
 
-  constructor(public googleMaps: GoogleMaps, private geolocation: Geolocation) {}
+  constructor(private geolocation: Geolocation, private alertCtrl: AlertController, private storage: Storage, private router: Router) {}
 
   ionViewDidEnter() {
     this.loadMap();
     this.getStartLocation();
+    this.loadTrackings();
+  }
+
+  ionViewDidLeave() {
+    this.map.clear();
+    this.getStartLocation();
+    this.distance = 0;
+    this.seconds = 0;
+    this.elapsedTime = '00 : 00 : 00';
+    this.trackingIsStarted = false;
+    this.polyLine.remove();
   }
 
   /**
@@ -45,7 +72,7 @@ export class Tab2Page {
    */
   loadMap() {
     this.element = document.getElementById('map');
-    this.map = this.googleMaps.create(this.element, {});
+    this.map = GoogleMaps.create(this.element, {});
     this.map.one(GoogleMapsEvent.MAP_READY).then(
 	     () => {
 	       console.log('Map is ready!');
@@ -60,6 +87,7 @@ export class Tab2Page {
    * @return
    */
   getStartLocation() {
+    this.tmpPostions = [];
 	   this.geolocation.getCurrentPosition(this.posOptions)
      .then((resp) => {
        this.latitude = resp.coords.latitude;
@@ -83,7 +111,7 @@ export class Tab2Page {
   }
 
   /**
-   * Agrega marcador
+   * Agrega marcador y posición inicial de polyline
    * @param  latitude  Latitud
    * @param  longitude longitud
    * @return
@@ -103,6 +131,15 @@ export class Tab2Page {
       this.marker = marker;
       console.log("ok");
     });
+
+    this.map.addPolyline({
+      points: [{lat: latitude, lng: longitude}],
+      'color' : '#488aff',
+      'width': 8,
+      'geodesic': true
+    }).then((polyline: Polyline) => {
+      this.polyLine = polyline;
+    });
   }
 
   /**
@@ -111,8 +148,9 @@ export class Tab2Page {
    * @return
    */
   startTracking() {
+    this.trackingIsStarted = true;
     this.watch = this.geolocation.watchPosition();
-
+    this.startTimer();
     this.subs = this.watch.subscribe((data) => {
       this.geojson.geometry.coordinates.push([data.coords.latitude, data.coords.longitude]);
 
@@ -125,15 +163,15 @@ export class Tab2Page {
         tilt: 20
       };
       this.map.moveCamera(cameraPosition);
-
+      this.tmpPostions.push(data.coords.latitude + ',' + data.coords.longitude);
       this.positions.push({lat: data.coords.latitude, lng: data.coords.longitude});
-      this.map.addPolyline({
-        points: this.positions,
-        'color' : '#488aff',
-        'width': 8,
-        'geodesic': true
-      });
+      console.log(data.coords.latitude+ "," + data.coords.longitude)
 
+      if (this.positions.length > 1){
+			     this.distance += Spherical.computeDistanceBetween(this.positions[this.positions.length-1], this.positions[this.positions.length-2]);
+           console.log(this.distance);
+		  };
+      this.polyLine.setPoints(this.positions);
       this.marker.setPosition({lat: data.coords.latitude, lng: data.coords.longitude});
     });
   }
@@ -142,7 +180,74 @@ export class Tab2Page {
    * Detiene todas las actividades de geolocalización y guarda datos trackeados
    * @return
    */
-  stopTracking() {
+   stopTracking() {
     this.subs.unsubscribe();
+    this.stopTimer();
+    this.presentAlert();
+  }
+
+  /**
+   * Inicializa cronómetro de carrera
+   * @return
+   */
+  startTimer () {
+    this.runClock = setInterval(() => {
+	    this.elapsedTime = moment().hour(0).minute(0).second(this.seconds++).format('HH : mm : ss');
+	  }, 1000)
+  }
+
+  /**
+   * Detiene cronómetro
+   * @return
+   */
+  stopTimer () {
+	        clearInterval(this.runClock);
+	 }
+
+   /**
+    * Lee los trackings ya existentes
+    * @return [description]
+    */
+   loadTrackings () {
+     this.storage.get('trackings').then((trackings) => {
+       this.trackings = trackings.length?trackings:[];
+     }).catch((error) => {
+       console.log(error);
+     });
+   }
+
+  /**
+   * Procesa los datos obtenidos durante la carrera
+   * @return
+   */
+  processData () {
+    var tmpStaticMap = this.staticMapsUrl + this.tmpPostions.join('|') + "&key=" +this.stacicMapsKey;
+    this.trackings.unshift({
+      trackingDate: new Date(),
+      distance: this.distance,
+      elapsedTime: this.elapsedTime,
+      geojson: this.geojson,
+      staticMap: tmpStaticMap
+    });
+    this.storage.set('trackings', this.trackings);
+    this.router.navigate(['/tabs/tab1']);
+  }
+
+  /**
+   * Presenta alerta de carrera finalizada
+   * @return
+   */
+  async presentAlert() {
+    const alert = await this.alertCtrl.create({
+      header: 'Carrera finalizada',
+      message: 'Felicidades, has finalizado tu carrera actual',
+      buttons: [{
+        text: 'Aceptar',
+        handler: () => {
+          this.processData();
+          }
+        }]
+      });
+      return await alert.present();
   }
 }

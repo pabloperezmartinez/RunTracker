@@ -10,12 +10,14 @@
   <div id="map_canvas" style="height:70%;">
 	   <div #map id="map" style="height:100%;"></div>
   </div>
-  <ion-button (click)="startTracking()">
+  <ion-button *ngIf="!trackingIsStarted" (click)="startTracking()">
     <ion-icon slot="start" name="star"></ion-icon>
     Iniciar Carrera
   </ion-button>
-  <ion-button (click)="stopTracking()">
+  <ion-button *ngIf="trackingIsStarted" (click)="stopTracking()">
     <ion-icon slot="start" name="star"></ion-icon>
     Detener Carrera
   </ion-button>
+  <p>Distancia: {{ (distance / 1000).toFixed(3)}} Km.</p>
+  <p>Tiempo: {{elapsedTime}}</p>
 </ion-content>
