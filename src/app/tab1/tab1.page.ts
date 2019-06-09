@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Storage } from '@ionic/storage';
+import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 
 @Component({
   selector: 'app-tab1',
@@ -9,10 +10,9 @@ import { Storage } from '@ionic/storage';
 export class Tab1Page {
 
   public trackings = [];
+  public geolocationPermisions = false;
 
-//https://maps.googleapis.com/maps/api/staticmap?center=40.714728,-73.998672&zoom=12&size=400x400&maptype=roadmap&key=AIzaSyAhzj5WPVa25tc_GRVW0gcYezutZFR2xYk
-
-  constructor(private storage: Storage) {}
+  constructor(private storage: Storage, private diagnostic: Diagnostic) {}
 
   ionViewDidLoad()  {
     this.loadTrackings();
@@ -20,16 +20,47 @@ export class Tab1Page {
 
   ionViewDidEnter()  {
     this.loadTrackings();
+    this.requestPermisions();
+    this.diagnostic.getLocationAuthorizationStatus()
+      .then( (permisionResponse) => {
+        this.geolocationPermisions = (permisionResponse == this.diagnostic.permissionStatus.GRANTED || permisionResponse == this.diagnostic.permissionStatus.GRANTED_WHEN_IN_USE);
+      });
   }
 
   /**
    * Lee todos los trackings almacenados en la base de datos
-   * @return [description]
+   * @return
    */
   loadTrackings() {
     this.storage.get('trackings').then((trackings) => {
       this.trackings = trackings || [];
     });
     console.log(this.trackings);
+  }
+
+  /**
+   * Solicita permisos de geolocalización
+   * @return
+   */
+  requestPermisions () {
+    this.diagnostic.requestLocationAuthorization()
+    .then( (status) => {
+      switch(status){
+          case this.diagnostic.permissionStatus.NOT_REQUESTED:
+              this.geolocationPermisions = false;
+              break;
+          case this.diagnostic.permissionStatus.DENIED:
+              this.geolocationPermisions = false;
+              break;
+          case this.diagnostic.permissionStatus.GRANTED:
+              this.geolocationPermisions = true;
+              break;
+          case this.diagnostic.permissionStatus.GRANTED_WHEN_IN_USE:
+              this.geolocationPermisions = true;
+              break;
+      }
+    }).catch( (error) => {
+      console.error(error);
+    });
   }
 }

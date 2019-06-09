@@ -6,7 +6,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content *ngIf="!trackings.length">
+<ion-content *ngIf="!trackings.length && geolocationPermisions">
     <ion-card class="welcome-card">
       <ion-img src="/assets/shapes.svg"></ion-img>
       <ion-card-header>
@@ -18,6 +18,20 @@
       </ion-card-content>
     </ion-card>
 </ion-content>
+
+<ion-content *ngIf="!geolocationPermisions">
+    <ion-card class="welcome-card">
+      <ion-img src="/assets/shapes.svg"></ion-img>
+      <ion-card-header>
+        <ion-card-subtitle></ion-card-subtitle>
+        <ion-card-title>Importante!!!</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Tienes que habilitar los permisos de localización para poder usar esta aplicación</p>
+      </ion-card-content>
+    </ion-card>
+</ion-content>
+
 <ion-content *ngIf="trackings.length">
   <ion-card class="welcome-card" *ngFor="let tracking of trackings; let i = index">
     <ion-img src="{{tracking.staticMap}}"></ion-img>
