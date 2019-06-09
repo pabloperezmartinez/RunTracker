@@ -4,6 +4,7 @@ import { Component } from '@angular/core';
 import { AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { Storage } from '@ionic/storage';
+import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import * as moment from 'moment';
 
 @Component({
@@ -17,7 +18,7 @@ export class Tab2Page {
   public element: HTMLElement;
   private longitude = 0;
   private latitude = 0;
-  private distance = 0;
+  public distance = 0;
   private trackings = [];
   private staticMaps = [];
   private tmpPostions = [];
@@ -34,7 +35,7 @@ export class Tab2Page {
   private seconds = 0;
   private runClock : any;
   public elapsedTime = '00 : 00 : 00';
-  private trackingIsStarted = false;
+  public trackingIsStarted = false;
 
   //inicialización de objeto JSON donde se almacenarán las coordenadas durante el tracking
   private geojson = {
@@ -48,7 +49,7 @@ export class Tab2Page {
   private positions = [];
   private polyLine : any;
 
-  constructor(private geolocation: Geolocation, private alertCtrl: AlertController, private storage: Storage, private router: Router) {}
+  constructor(private geolocation: Geolocation, private alertCtrl: AlertController, private storage: Storage, private router: Router, private diagnostic: Diagnostic) {}
 
   ionViewDidEnter() {
     this.loadMap();
@@ -63,7 +64,7 @@ export class Tab2Page {
     this.seconds = 0;
     this.elapsedTime = '00 : 00 : 00';
     this.trackingIsStarted = false;
-    this.polyLine.remove();
+    this.map.remove();
   }
 
   /**
@@ -183,7 +184,7 @@ export class Tab2Page {
    stopTracking() {
     this.subs.unsubscribe();
     this.stopTimer();
-    this.presentAlert();
+    this.displayAlert();
   }
 
   /**
@@ -237,7 +238,7 @@ export class Tab2Page {
    * Presenta alerta de carrera finalizada
    * @return
    */
-  async presentAlert() {
+  async displayAlert() {
     const alert = await this.alertCtrl.create({
       header: 'Carrera finalizada',
       message: 'Felicidades, has finalizado tu carrera actual',

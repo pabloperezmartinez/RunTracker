@@ -13,6 +13,7 @@ import { AppComponent } from './app.component';
 import { GoogleMaps, Spherical } from '@ionic-native/google-maps';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { IonicStorageModule } from '@ionic/storage';
+import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -22,6 +23,7 @@ import { IonicStorageModule } from '@ionic/storage';
     StatusBar,
     SplashScreen,
     GoogleMaps,
+    Diagnostic,
     Geolocation,
     Spherical,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
