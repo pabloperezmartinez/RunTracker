@@ -22,7 +22,7 @@ export class Tab2Page {
   private trackings = [];
   private staticMaps = [];
   private tmpPostions = [];
-  private stacicMapsKey = "AIzaSyAJSv8BbBoofXTmF02eCikIt16O2Gp2-Qo";
+  private stacicMapsKey = "____STATIC_MAPS_API_KEY________";
   private staticMapsUrl = 'https://maps.googleapis.com/maps/api/staticmap?size=600x200&path=color:0x0000cc|weight:3|';
 
 
